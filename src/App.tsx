@@ -55,6 +55,21 @@ function App() {
     if (session) loadStickers();
   }, [session]);
 
+  useEffect(() => {
+    if (!session?.user) return;
+    const email = session.user.email?.toLowerCase();
+    if (!email) return;
+
+    void supabase.from("profiles").upsert(
+      {
+        id: session.user.id,
+        email,
+        display_name: session.user.user_metadata?.name ?? null,
+      },
+      { onConflict: "id" },
+    );
+  }, [session]);
+
   // Still resolving auth state
   if (session === undefined) {
     return (
