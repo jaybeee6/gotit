@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { useStickerStore } from "../store/useCounterStore";
-import { CATEGORY_META } from "../data/mockStickers";
 import StickerCard from "../components/StickerCard";
 import SearchBar from "../components/SearchBar";
 
