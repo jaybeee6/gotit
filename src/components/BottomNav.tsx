@@ -14,7 +14,13 @@ const tabs: { id: Screen; label: string; Icon: React.ElementType }[] = [
 
 export default function BottomNav({ active, onNavigate }: Props) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50">
+    <div
+      className="fixed left-0 right-0 z-50"
+      style={{
+        bottom: 0,
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
+    >
       <div className="max-w-md mx-auto">
         <div
           className="border-t border-gray-200/70 px-2"
@@ -24,7 +30,7 @@ export default function BottomNav({ active, onNavigate }: Props) {
             WebkitBackdropFilter: "blur(20px)",
           }}
         >
-          <div className="flex pb-safe">
+          <div className="flex">
             {tabs.map(({ id, label, Icon }) => {
               const isActive = active === id;
               return (

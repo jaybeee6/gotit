@@ -1,19 +1,24 @@
 import { Plus } from "lucide-react";
-import { useStickerStore } from "../store/useCounterStore";
 import { CATEGORY_META, type Sticker } from "../data/mockStickers";
 
 interface Props {
   sticker: Sticker;
   editing: boolean;
+  onToggleOwned: (id: number) => void;
+  onIncrementDuplicate: (id: number) => void;
 }
 
-export default function StickerCard({ sticker, editing }: Props) {
-  const { toggleOwned, incrementQuantity } = useStickerStore();
+export default function StickerCard({
+  sticker,
+  editing,
+  onToggleOwned,
+  onIncrementDuplicate,
+}: Props) {
   const meta = CATEGORY_META[sticker.category];
 
   return (
     <button
-      onClick={() => editing && toggleOwned(sticker.id)}
+      onClick={() => editing && onToggleOwned(sticker.id)}
       className={`relative w-full aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 p-2 transition-transform border-none select-none ${editing ? "active:scale-95 cursor-pointer" : "cursor-default"} ${
         sticker.owned
           ? "bg-green-500 shadow-sm"
@@ -43,7 +48,7 @@ export default function StickerCard({ sticker, editing }: Props) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            incrementQuantity(sticker.id);
+            onIncrementDuplicate(sticker.id);
           }}
           className="absolute bottom-1.5 right-1.5 w-5 h-5 bg-white/30 rounded-full flex items-center justify-center cursor-pointer border-none"
         >
