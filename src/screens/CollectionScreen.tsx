@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { Sticker } from "../data/mockStickers";
 import { useStickerStore } from "../store/useCounterStore";
 import { supabase } from "../lib/supabase";
 import StickerCard from "../components/StickerCard";
@@ -6,14 +7,67 @@ import SearchBar from "../components/SearchBar";
 
 type Filter = "all" | "have" | "missing";
 
-export default function CollectionScreen() {
-  const { stickers } = useStickerStore();
+interface Props {
+  onUnsavedChanges: (hasUnsaved: boolean) => void;
+}
+
+export default function CollectionScreen({ onUnsavedChanges }: Props) {
+  const { stickers, saveStickerChanges } = useStickerStore();
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(false);
+  const [draftById, setDraftById] = useState<Record<number, Sticker>>({});
 
-  const owned = stickers.filter((s) => s.owned).length;
-  const total = stickers.length;
+  const hasUnsavedChanges = Object.keys(draftById).length > 0;
+
+  useEffect(() => {
+    onUnsavedChanges(editing && hasUnsavedChanges);
+  }, [editing, hasUnsavedChanges, onUnsavedChanges]);
+
+  function currentStickerForId(id: number) {
+    const fromDraft = draftById[id];
+    if (fromDraft) return fromDraft;
+    return stickers.find((s) => s.id === id);
+  }
+
+  function handleToggleOwned(id: number) {
+    if (!editing) return;
+    const current = currentStickerForId(id);
+    if (!current) return;
+    const next = {
+      ...current,
+      owned: !current.owned,
+      quantity: current.owned ? 0 : 1,
+    };
+    setDraftById((prev) => ({ ...prev, [id]: next }));
+  }
+
+  function handleIncrementDuplicate(id: number) {
+    if (!editing) return;
+    const current = currentStickerForId(id);
+    if (!current) return;
+    const next = {
+      ...current,
+      owned: true,
+      quantity: current.quantity + 1,
+    };
+    setDraftById((prev) => ({ ...prev, [id]: next }));
+  }
+
+  async function handleSaveChanges() {
+    const changes = Object.values(draftById);
+    await saveStickerChanges(changes);
+    setDraftById({});
+    setEditing(false);
+  }
+
+  const viewStickers = useMemo(
+    () => stickers.map((s) => draftById[s.id] ?? s),
+    [stickers, draftById],
+  );
+
+  const owned = viewStickers.filter((s) => s.owned).length;
+  const total = viewStickers.length;
   const progress = total > 0 ? owned / total : 0;
 
   const circumference = 2 * Math.PI * 26;
@@ -21,7 +75,7 @@ export default function CollectionScreen() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return stickers.filter((s) => {
+    return viewStickers.filter((s) => {
       const matchFilter =
         filter === "all" || (filter === "have" ? s.owned : !s.owned);
       const matchSearch =
@@ -30,7 +84,7 @@ export default function CollectionScreen() {
         s.name.toLowerCase().includes(q);
       return matchFilter && matchSearch;
     });
-  }, [stickers, filter, search]);
+  }, [viewStickers, filter, search]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -43,7 +97,10 @@ export default function CollectionScreen() {
           <div className="flex items-center gap-3">
             {!editing && (
               <button
-                onClick={() => setEditing(true)}
+                onClick={() => {
+                  setDraftById({});
+                  setEditing(true);
+                }}
                 className="text-[17px] font-medium cursor-pointer border-none bg-transparent"
                 style={{ color: "#007AFF" }}
               >
@@ -154,6 +211,8 @@ export default function CollectionScreen() {
                 key={sticker.id}
                 sticker={sticker}
                 editing={editing}
+                onToggleOwned={handleToggleOwned}
+                onIncrementDuplicate={handleIncrementDuplicate}
               />
             ))}
           </div>
@@ -165,7 +224,7 @@ export default function CollectionScreen() {
         <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2">
           <div className="max-w-md mx-auto">
             <button
-              onClick={() => setEditing(false)}
+              onClick={handleSaveChanges}
               className="w-full py-4 rounded-2xl text-white text-[17px] font-semibold cursor-pointer border-none shadow-lg"
               style={{ background: "#34C759" }}
             >

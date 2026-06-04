@@ -6,6 +6,7 @@ interface StickerStore {
   stickers: Sticker[];
   loading: boolean;
   loadStickers: () => Promise<void>;
+  saveStickerChanges: (changes: Sticker[]) => Promise<void>;
   toggleOwned: (id: number) => void;
   incrementQuantity: (id: number) => void;
   decrementQuantity: (id: number) => void;
@@ -58,6 +59,32 @@ export const useStickerStore = create<StickerStore>((set) => ({
     });
 
     set({ stickers: merged, loading: false });
+  },
+
+  saveStickerChanges: async (changes) => {
+    if (!changes.length) return;
+
+    set((state) => {
+      const byId = new Map(changes.map((s) => [s.id, s]));
+      return {
+        stickers: state.stickers.map((s) => byId.get(s.id) ?? s),
+      };
+    });
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from("user_stickers").upsert(
+      changes.map((s) => ({
+        user_id: user.id,
+        sticker_number: s.number,
+        owned: s.owned,
+        quantity: s.quantity,
+      })),
+      { onConflict: "user_id,sticker_number" },
+    );
   },
 
   toggleOwned: (id) =>
