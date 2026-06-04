@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useStickerStore } from "../store/useCounterStore";
+import { supabase } from "../lib/supabase";
 import StickerCard from "../components/StickerCard";
 import SearchBar from "../components/SearchBar";
 
@@ -39,15 +40,23 @@ export default function CollectionScreen() {
           <h1 className="text-[28px] font-bold text-gray-900 tracking-tight">
             My Collection
           </h1>
-          {!editing && (
+          <div className="flex items-center gap-3">
+            {!editing && (
+              <button
+                onClick={() => setEditing(true)}
+                className="text-[17px] font-medium cursor-pointer border-none bg-transparent"
+                style={{ color: "#007AFF" }}
+              >
+                Edit
+              </button>
+            )}
             <button
-              onClick={() => setEditing(true)}
-              className="text-[17px] font-medium cursor-pointer border-none bg-transparent"
-              style={{ color: "#007AFF" }}
+              onClick={() => supabase.auth.signOut()}
+              className="text-[13px] font-medium cursor-pointer border-none bg-transparent text-gray-400"
             >
-              Edit
+              Sign Out
             </button>
-          )}
+          </div>
         </div>
 
         {/* Stats row */}
